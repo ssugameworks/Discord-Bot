@@ -208,7 +208,7 @@ func (ch *CompetitionHandler) handleCompetitionUpdate(s *discordgo.Session, m *d
 	if len(params) < 2 {
 		err := errors.NewValidationError("COMPETITION_UPDATE_INVALID_PARAMS",
 			"Invalid competition update parameters",
-			"사용법: `!대회 update <필드> <값>`\n필드: name, start, end\n예시: `!대회 update name 새로운대회명`")
+			"사용법: `!대회 update <필드> <값>`\n필드: name, start, end\n예시: `!대회 update name 대회명`")
 		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}

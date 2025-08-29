@@ -14,9 +14,9 @@ import (
 )
 
 type CommandHandler struct {
-	storage           *storage.Storage
-	scoreboardManager *ScoreboardManager
-	client            *api.SolvedACClient
+	storage            *storage.Storage
+	scoreboardManager  *ScoreboardManager
+	client             *api.SolvedACClient
 	competitionHandler *CompetitionHandler
 }
 
@@ -59,7 +59,7 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 	switch command {
 	case "help", "도움말":
 		ch.handleHelp(s, m)
-	case "register", "참가":
+	case "register", "등록":
 		ch.handleRegister(s, m, params)
 	case "scoreboard", "스코어보드":
 		if isDM {
@@ -82,7 +82,7 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 	helpText := `🤖 **알고리즘 경진대회 봇 명령어**
 
 **참가자 명령어:**
-• ` + "`!참가 <이름> <백준ID>`" + ` - 대회 참가 신청
+• ` + "`!등록 <이름> <백준ID>`" + ` - 대회 등록 신청
 • ` + "`!스코어보드`" + ` - 현재 스코어보드 확인
 • ` + "`!참가자`" + ` - 참가자 목록 확인
 
@@ -91,7 +91,7 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 • ` + "`!대회 status`" + ` - 대회 상태 확인
 • ` + "`!대회 blackout <on/off>`" + ` - 스코어보드 공개/비공개 설정
 • ` + "`!대회 update <필드> <값>`" + ` - 대회 정보 수정 (name, start, end)
-• ` + "`!삭제 <백준ID>`" + ` - 참가자 삭제 (관리자 전용)
+• ` + "`!삭제 <백준ID>`" + ` - 참가자 삭제
 
 **기타:**
 • ` + "`!ping`" + ` - 봇 응답 확인
@@ -104,7 +104,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	if len(params) < 2 {
 		err := errors.NewValidationError("REGISTER_INVALID_PARAMS",
 			"Invalid register parameters",
-			"사용법: `!참가 <이름> <백준ID>`")
+			"사용법: `!등록 <이름> <백준ID>`")
 		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}
@@ -131,19 +131,17 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	}
 
 	tierName := getTierName(userInfo.Tier)
-	response := fmt.Sprintf("**등록 완료!**\n"+
-		"👤 이름: %s\n"+
-		"🎯 백준ID: %s\n"+
-		"🏅 시작 티어: %s (%d점)\n"+
-		"📊 시작 레이팅: %d",
-		name, baekjoonID, tierName, userInfo.Tier, userInfo.Rating)
+	colorCode := constants.GetTierANSIColor(userInfo.Tier)
+	
+	response := fmt.Sprintf("```ansi\n%s%s(%s)%s님 성공적으로 등록되었습니다!\n```", 
+		colorCode, name, tierName, constants.ANSIReset)
 
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 
 func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.MessageCreate) {
 	isAdmin := ch.isAdmin(s, m)
-	scoreboard, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
+	embed, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
 		botErr := errors.NewSystemError("SCOREBOARD_GENERATION_FAILED",
 			"Failed to generate scoreboard", err)
@@ -152,7 +150,7 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, scoreboard)
+	s.ChannelMessageSendEmbed(m.ChannelID, embed)
 }
 
 func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -162,22 +160,18 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 		return
 	}
 
-	// 제목 메시지 먼저 전송
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("👥 **참가자 목록** (%d명)", len(participants)))
+	var sb strings.Builder
+	sb.WriteString("```ansi\n")
 
-	// 각 참가자를 개별 임베드로 전송 (티어 색상 적용)
 	for i, p := range participants {
 		tierName := getTierName(p.StartTier)
-		participantText := fmt.Sprintf("%d. **%s** (%s) - %s", 
-			i+1, p.Name, p.BaekjoonID, tierName)
-		
-		embed := &discordgo.MessageEmbed{
-			Description: participantText,
-			Color:       utils.GetTierColor(p.StartTier),
-		}
-		
-		s.ChannelMessageSendEmbed(m.ChannelID, embed)
+		colorCode := constants.GetTierANSIColor(p.StartTier)
+		sb.WriteString(fmt.Sprintf("%s%d. %s (%s) - %s%s\n",
+			colorCode, i+1, p.Name, p.BaekjoonID, tierName, constants.ANSIReset))
 	}
+
+	sb.WriteString("```")
+	s.ChannelMessageSend(m.ChannelID, sb.String())
 }
 
 func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
@@ -255,7 +249,6 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 
 	return false
 }
-
 
 func getTierName(tier int) string {
 	return scoring.GetTierName(tier)

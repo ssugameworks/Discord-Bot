@@ -47,6 +47,32 @@ func TruncateString(s string, maxLen int) string {
 	return s[:maxLen-len(constants.TruncateIndicator)] + constants.TruncateIndicator
 }
 
+// 한글과 영어 문자 폭을 고려한 문자열 길이 계산
+func GetDisplayWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		if r >= 0x1100 && r <= 0x11FF || // 한글 자모
+		   r >= 0x3130 && r <= 0x318F || // 한글 호환 자모
+		   r >= 0xAC00 && r <= 0xD7AF || // 한글 완성형
+		   r >= 0xFF01 && r <= 0xFF5E {   // 전각 문자
+			width += 2 // 한글, 한자 등 전각 문자는 2칸
+		} else {
+			width += 1 // 영어, 숫자 등 반각 문자는 1칸
+		}
+	}
+	return width
+}
+
+// 표시 폭을 고려한 문자열 패딩
+func PadStringByWidth(s string, targetWidth int) string {
+	currentWidth := GetDisplayWidth(s)
+	if currentWidth >= targetWidth {
+		return s
+	}
+	padding := targetWidth - currentWidth
+	return s + strings.Repeat(" ", padding)
+}
+
 func SanitizeString(s string) string {
 	// Discord 메시지에서 문제가 될 수 있는 특수문자 제거/변경
 	s = strings.ReplaceAll(s, "`", "'")

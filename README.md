@@ -80,7 +80,7 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 - `!대회 blackout <on/off>` - 스코어보드 공개/비공개 설정
 - `!대회 update <필드> <값>` - 대회 정보 수정
   - 필드: name, start, end
-  - 예시: `!대회 update name 새로운대회명`
+  - 예시: `!대회 update name 대회명`
 
 ## 자동 스코어보드
 

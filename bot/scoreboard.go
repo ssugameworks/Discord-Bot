@@ -29,19 +29,29 @@ func NewScoreboardManager(storage *storage.Storage) *ScoreboardManager {
 	}
 }
 
-func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (string, error) {
+func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
 	competition := sm.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
-		return "", fmt.Errorf("no active competition")
+		return nil, fmt.Errorf("no active competition")
 	}
 
 	if sm.storage.IsBlackoutPeriod() && competition.ShowScoreboard && !isAdmin {
-		return "🔒 **스코어보드 비공개 기간입니다** (마지막 3일)", nil
+		embed := &discordgo.MessageEmbed{
+			Title:       "🔒 스코어보드 비공개",
+			Description: "마지막 3일간 스코어보드가 비공개됩니다",
+			Color:       constants.ColorTierDefault,
+		}
+		return embed, nil
 	}
 
 	participants := sm.storage.GetParticipants()
 	if len(participants) == 0 {
-		return "참가자가 없습니다.", nil
+		embed := &discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("🏆 %s 스코어보드", competition.Name),
+			Description: "참가자가 없습니다.",
+			Color:       constants.ColorTierDefault,
+		}
+		return embed, nil
 	}
 
 	scores := make([]models.ScoreData, 0, len(participants))
@@ -88,20 +98,21 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (string, error) {
 	return sm.formatScoreboard(competition, scores, isAdmin), nil
 }
 
-func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) string {
-	var sb strings.Builder
-
-	sb.WriteString("🏆 **알고리즘 경진대회 스코어보드**\n")
-	sb.WriteString(fmt.Sprintf("📅 **%s**\n", competition.Name))
-	sb.WriteString(fmt.Sprintf("⏰ %s ~ %s\n\n",
-		competition.StartDate.Format(constants.DateFormat),
-		competition.EndDate.Format(constants.DateFormat)))
-
-	if len(scores) == 0 {
-		sb.WriteString("아직 점수가 계산된 참가자가 없습니다.\n")
-		return sb.String()
+func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{
+		Title: fmt.Sprintf("🏆 %s 스코어보드", competition.Name),
+		Description: fmt.Sprintf("%s ~ %s",
+			competition.StartDate.Format(constants.DateFormat),
+			competition.EndDate.Format(constants.DateFormat)),
+		Color: constants.ColorTierGold,
 	}
 
+	if len(scores) == 0 {
+		embed.Description += "\n\n아직 점수가 계산된 참가자가 없습니다."
+		return embed
+	}
+
+	var sb strings.Builder
 	sb.WriteString("```\n")
 	sb.WriteString(fmt.Sprintf("%-4s %-*s %6s\n",
 		"순위", constants.MaxUsernameLength, "이름", "점수"))
@@ -116,24 +127,28 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 			score.Score))
 	}
 
-	sb.WriteString("```\n")
+	sb.WriteString("```")
 
+	embed.Description += "\n\n" + sb.String()
+
+	// 블랙아웃 경고 추가
 	now := time.Now()
 	if now.Before(competition.BlackoutStartDate) {
 		daysLeft := int(competition.BlackoutStartDate.Sub(now).Hours() / 24)
-		sb.WriteString(fmt.Sprintf("\n⚠️ **%d일 후 스코어보드가 비공개됩니다**", daysLeft))
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("⚠️ %d일 후 스코어보드가 비공개됩니다", daysLeft),
+		}
 	}
 
-	return sb.String()
+	return embed
 }
 
 func (sm *ScoreboardManager) SendDailyScoreboard(session *discordgo.Session, channelID string) error {
-	scoreboard, err := sm.GenerateScoreboard(false) // 자동 스코어보드는 관리자 권한 없음
+	embed, err := sm.GenerateScoreboard(false) // 자동 스코어보드는 관리자 권한 없음
 	if err != nil {
 		return err
 	}
 
-	_, err = session.ChannelMessageSend(channelID, scoreboard)
+	_, err = session.ChannelMessageSendEmbed(channelID, embed)
 	return err
 }
-
