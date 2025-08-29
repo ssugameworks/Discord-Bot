@@ -2,6 +2,7 @@ package bot
 
 import (
 	"discord-bot/api"
+	"discord-bot/constants"
 	"discord-bot/models"
 	"discord-bot/scoring"
 	"discord-bot/storage"
@@ -93,8 +94,8 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	sb.WriteString("🏆 **알고리즘 경진대회 스코어보드**\n")
 	sb.WriteString(fmt.Sprintf("📅 **%s**\n", competition.Name))
 	sb.WriteString(fmt.Sprintf("⏰ %s ~ %s\n\n",
-		competition.StartDate.Format("2006-01-02"),
-		competition.EndDate.Format("2006-01-02")))
+		competition.StartDate.Format(constants.DateFormat),
+		competition.EndDate.Format(constants.DateFormat)))
 
 	if len(scores) == 0 {
 		sb.WriteString("아직 점수가 계산된 참가자가 없습니다.\n")
@@ -102,15 +103,16 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	}
 
 	sb.WriteString("```\n")
-	sb.WriteString(fmt.Sprintf("%-4s %-15s %6s\n",
-		"순위", "이름", "점수"))
+	sb.WriteString(fmt.Sprintf("%-4s %-*s %6s\n",
+		"순위", constants.MaxUsernameLength, "이름", "점수"))
 	sb.WriteString("──────────────────────────────\n")
 
 	for i, score := range scores {
 		rank := i + 1
-		sb.WriteString(fmt.Sprintf("%-4d %-15s %6.0f\n",
+		sb.WriteString(fmt.Sprintf("%-4d %-*s %6.0f\n",
 			rank,
-			utils.TruncateString(score.Name, 15),
+			constants.MaxUsernameLength,
+			utils.TruncateString(score.Name, constants.MaxUsernameLength),
 			score.Score))
 	}
 

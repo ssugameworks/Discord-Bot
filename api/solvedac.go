@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-// SolvedACClient는 solved.ac API와 통신하는 클라이언트입니다
+// solved.ac API와 통신하는 클라이언트입니다
 type SolvedACClient struct {
 	client  *http.Client
 	baseURL string
 }
 
-// UserInfo는 solved.ac 사용자 정보를 나타냅니다
+// solved.ac 사용자 정보를 나타냅니다
 type UserInfo struct {
 	Handle          string `json:"handle"`
 	Bio             string `json:"bio"`
@@ -30,7 +30,7 @@ type UserInfo struct {
 	Rank            int    `json:"rank"`
 }
 
-// ProblemInfo는 solved.ac 문제 정보를 나타냅니다
+// solved.ac 문제 정보를 나타냅니다
 type ProblemInfo struct {
 	ProblemID         int     `json:"problemId"`
 	Level             int     `json:"level"`
@@ -39,13 +39,13 @@ type ProblemInfo struct {
 	AverageTries      float64 `json:"averageTries"`
 }
 
-// Top100Response는 사용자의 TOP 100 문제 응답을 나타냅니다
+// 사용자의 TOP 100 문제 응답을 나타냅니다
 type Top100Response struct {
 	Count int           `json:"count"`
 	Items []ProblemInfo `json:"items"`
 }
 
-// NewSolvedACClient는 새로운 SolvedACClient 인스턴스를 생성합니다
+// 새로운 SolvedACClient 인스턴스를 생성합니다
 func NewSolvedACClient() *SolvedACClient {
 	utils.Debug("Creating new SolvedAC API client")
 	return &SolvedACClient{
@@ -56,7 +56,7 @@ func NewSolvedACClient() *SolvedACClient {
 	}
 }
 
-// GetUserInfo는 지정된 핸들의 사용자 정보를 가져옵니다
+// 지정된 핸들의 사용자 정보를 가져옵니다
 func (c *SolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("invalid handle format: %s", handle)
@@ -66,7 +66,7 @@ func (c *SolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 	return c.getUserInfoWithRetry(url, handle)
 }
 
-// getUserInfoWithRetry는 재시도 로직을 포함한 사용자 정보 조회
+// 재시도 로직을 포함한 사용자 정보 조회
 func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, error) {
 	var lastErr error
 
@@ -125,7 +125,7 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 	return nil, lastErr
 }
 
-// GetUserTop100는 지정된 사용자의 TOP 100 문제를 가져옵니다
+// 지정된 사용자의 TOP 100 문제를 가져옵니다
 func (c *SolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("invalid handle format: %s", handle)
@@ -135,7 +135,7 @@ func (c *SolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
 	return c.getUserTop100WithRetry(url, handle)
 }
 
-// getUserTop100WithRetry는 재시도 로직을 포함한 TOP 100 조회
+// 재시도 로직을 포함한 TOP 100 조회
 func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Response, error) {
 	var lastErr error
 

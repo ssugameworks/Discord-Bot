@@ -219,7 +219,7 @@ func (s *Storage) GetParticipants() []models.Participant {
 }
 
 func (s *Storage) CreateCompetition(name string, startDate, endDate time.Time) error {
-	blackoutStart := endDate.AddDate(0, 0, -3)
+	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
 	
 	s.competition = &models.Competition{
 		ID:                1,
@@ -285,6 +285,6 @@ func (s *Storage) UpdateCompetitionEndDate(endDate time.Time) error {
 
 	s.competition.EndDate = endDate
 	// 블랙아웃 기간도 자동으로 재설정 (종료일 3일 전부터)
-	s.competition.BlackoutStartDate = endDate.AddDate(0, 0, -3)
+	s.competition.BlackoutStartDate = endDate.AddDate(0, 0, -constants.BlackoutDays)
 	return s.SaveCompetition()
 }

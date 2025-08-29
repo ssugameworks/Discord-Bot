@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"discord-bot/constants"
 	"discord-bot/errors"
 	"discord-bot/models"
 	"fmt"
@@ -72,7 +73,7 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 	startDateStr := params[1]
 	endDateStr := params[2]
 
-	startDate, err := time.Parse("2006-01-02", startDateStr)
+	startDate, err := time.Parse(constants.DateFormat, startDateStr)
 	if err != nil {
 		botErr := errors.NewValidationError("INVALID_START_DATE",
 			fmt.Sprintf("Invalid start date format: %s", startDateStr),
@@ -81,7 +82,7 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 		return
 	}
 
-	endDate, err := time.Parse("2006-01-02", endDateStr)
+	endDate, err := time.Parse(constants.DateFormat, endDateStr)
 	if err != nil {
 		botErr := errors.NewValidationError("INVALID_END_DATE",
 			fmt.Sprintf("Invalid end date format: %s", endDateStr),
@@ -107,17 +108,17 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 		return
 	}
 
-	blackoutStart := endDate.AddDate(0, 0, -3)
+	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
 	response := fmt.Sprintf("🏆 **대회가 생성되었습니다!**\n"+
 		"📝 대회명: %s\n"+
 		"📅 기간: %s ~ %s\n"+
 		"🔒 블랙아웃: %s ~ %s\n"+
 		"✅ 상태: active",
 		name,
-		startDate.Format("2006-01-02"),
-		endDate.Format("2006-01-02"),
-		blackoutStart.Format("2006-01-02"),
-		endDate.Format("2006-01-02"))
+		startDate.Format(constants.DateFormat),
+		endDate.Format(constants.DateFormat),
+		blackoutStart.Format(constants.DateFormat),
+		endDate.Format(constants.DateFormat))
 
 	errors.SendDiscordSuccess(s, m.ChannelID, response)
 }
@@ -151,8 +152,8 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 		"🔒 **스코어보드:** %s\n"+
 		"👥 **참가자 수:** %d명",
 		competition.Name,
-		competition.StartDate.Format("2006-01-02"),
-		competition.EndDate.Format("2006-01-02"),
+		competition.StartDate.Format(constants.DateFormat),
+		competition.EndDate.Format(constants.DateFormat),
 		status,
 		blackoutStatus,
 		len(ch.commandHandler.storage.GetParticipants()))
@@ -262,7 +263,7 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 }
 
 func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
-	startDate, err := time.Parse("2006-01-02", dateStr)
+	startDate, err := time.Parse(constants.DateFormat, dateStr)
 	if err != nil {
 		botErr := errors.NewValidationError("INVALID_START_DATE",
 			fmt.Sprintf("Invalid start date format: %s", dateStr),
@@ -290,12 +291,12 @@ func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *dis
 	}
 
 	message := fmt.Sprintf("시작일이 **%s**에서 **%s**로 변경되었습니다.",
-		oldDate.Format("2006-01-02"), startDate.Format("2006-01-02"))
+		oldDate.Format(constants.DateFormat), startDate.Format(constants.DateFormat))
 	errors.SendDiscordSuccess(s, m.ChannelID, message)
 }
 
 func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
-	endDate, err := time.Parse("2006-01-02", dateStr)
+	endDate, err := time.Parse(constants.DateFormat, dateStr)
 	if err != nil {
 		botErr := errors.NewValidationError("INVALID_END_DATE",
 			fmt.Sprintf("Invalid end date format: %s", dateStr),
@@ -323,6 +324,6 @@ func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *disco
 	}
 
 	message := fmt.Sprintf("종료일이 **%s**에서 **%s**로 변경되었습니다.",
-		oldDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+		oldDate.Format(constants.DateFormat), endDate.Format(constants.DateFormat))
 	errors.SendDiscordSuccess(s, m.ChannelID, message)
 }

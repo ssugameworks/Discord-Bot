@@ -116,14 +116,14 @@ func (app *Application) Run() error {
 
 	// 종료 신호 대기
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, syscall.SIGKILL)
 	<-sc
 
 	return app.Stop()
 }
 
 func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready) {
-	// Ready event handler - no welcome message
+	// TODO: Welcome message
 }
 
 func (app *Application) Stop() error {

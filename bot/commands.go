@@ -2,6 +2,7 @@ package bot
 
 import (
 	"discord-bot/api"
+	"discord-bot/constants"
 	"discord-bot/errors"
 	"discord-bot/scoring"
 	"discord-bot/storage"
@@ -35,11 +36,11 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 
 	// DM 디버깅 로그
 	if m.GuildID == "" {
-		fmt.Printf("DM 수신: %s from %s\n", m.Content, m.Author.Username)
+		fmt.Printf(constants.DMReceivedTemplate, m.Content, m.Author.Username)
 	}
 
 	content := strings.TrimSpace(m.Content)
-	if !strings.HasPrefix(content, "!") {
+	if !strings.HasPrefix(content, constants.CommandPrefix) {
 		return
 	}
 
@@ -48,7 +49,7 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 		return
 	}
 
-	command := args[0][1:]
+	command := args[0][constants.CommandPrefixLength:]
 	params := args[1:]
 
 	// DM 처리 확인
