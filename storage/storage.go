@@ -288,3 +288,16 @@ func (s *Storage) UpdateCompetitionEndDate(endDate time.Time) error {
 	s.competition.BlackoutStartDate = endDate.AddDate(0, 0, -constants.BlackoutDays)
 	return s.SaveCompetition()
 }
+
+// RemoveParticipant는 백준ID로 참가자를 삭제합니다
+func (s *Storage) RemoveParticipant(baekjoonID string) error {
+	for i, p := range s.participants {
+		if p.BaekjoonID == baekjoonID {
+			// 슬라이스에서 해당 참가자 제거
+			s.participants = append(s.participants[:i], s.participants[i+1:]...)
+			utils.Info("Removed participant: %s (%s)", p.Name, baekjoonID)
+			return s.SaveParticipants()
+		}
+	}
+	return fmt.Errorf("participant with Baekjoon ID %s not found", baekjoonID)
+}

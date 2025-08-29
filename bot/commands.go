@@ -6,6 +6,7 @@ import (
 	"discord-bot/errors"
 	"discord-bot/scoring"
 	"discord-bot/storage"
+	"discord-bot/utils"
 	"fmt"
 	"strings"
 
@@ -70,6 +71,8 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 		ch.competitionHandler.HandleCompetition(s, m, params)
 	case "participants", "참가자":
 		ch.handleParticipants(s, m)
+	case "remove", "삭제":
+		ch.handleRemoveParticipant(s, m, params)
 	case "ping":
 		s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
 	}
@@ -88,6 +91,7 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 • ` + "`!대회 status`" + ` - 대회 상태 확인
 • ` + "`!대회 blackout <on/off>`" + ` - 스코어보드 공개/비공개 설정
 • ` + "`!대회 update <필드> <값>`" + ` - 대회 정보 수정 (name, start, end)
+• ` + "`!삭제 <백준ID>`" + ` - 참가자 삭제 (관리자 전용)
 
 **기타:**
 • ` + "`!ping`" + ` - 봇 응답 확인
@@ -158,16 +162,63 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 		return
 	}
 
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("👥 **참가자 목록** (%d명)\n\n", len(participants)))
+	// 제목 메시지 먼저 전송
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("👥 **참가자 목록** (%d명)", len(participants)))
 
+	// 각 참가자를 개별 임베드로 전송 (티어 색상 적용)
 	for i, p := range participants {
 		tierName := getTierName(p.StartTier)
-		sb.WriteString(fmt.Sprintf("%d. **%s** (%s) - %s\n",
-			i+1, p.Name, p.BaekjoonID, tierName))
+		participantText := fmt.Sprintf("%d. **%s** (%s) - %s", 
+			i+1, p.Name, p.BaekjoonID, tierName)
+		
+		embed := &discordgo.MessageEmbed{
+			Description: participantText,
+			Color:       utils.GetTierColor(p.StartTier),
+		}
+		
+		s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	}
+}
+
+func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
+	// 관리자 권한 확인
+	if !ch.isAdmin(s, m) {
+		s.ChannelMessageSend(m.ChannelID, "❌ 이 명령어는 관리자만 사용할 수 있습니다.")
+		return
 	}
 
-	s.ChannelMessageSend(m.ChannelID, sb.String())
+	// 파라미터 확인
+	if len(params) < 1 {
+		err := errors.NewValidationError("REMOVE_INVALID_PARAMS",
+			"Invalid remove parameters",
+			"사용법: `!삭제 <백준ID>`")
+		errors.HandleDiscordError(s, m.ChannelID, err)
+		return
+	}
+
+	baekjoonID := params[0]
+
+	// 백준 ID 유효성 검사
+	if !utils.IsValidBaekjoonID(baekjoonID) {
+		err := errors.NewValidationError("REMOVE_INVALID_BAEKJOON_ID",
+			"Invalid Baekjoon ID format",
+			"유효하지 않은 백준 ID 형식입니다.")
+		errors.HandleDiscordError(s, m.ChannelID, err)
+		return
+	}
+
+	// 참가자 삭제
+	err := ch.storage.RemoveParticipant(baekjoonID)
+	if err != nil {
+		botErr := errors.NewNotFoundError("PARTICIPANT_NOT_FOUND",
+			fmt.Sprintf("Participant with Baekjoon ID '%s' not found", baekjoonID),
+			fmt.Sprintf("백준 ID '%s'로 등록된 참가자를 찾을 수 없습니다.", baekjoonID))
+		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		return
+	}
+
+	response := fmt.Sprintf("✅ **참가자 삭제 완료**\n🎯 백준ID: %s", baekjoonID)
+	s.ChannelMessageSend(m.ChannelID, response)
 }
 
 // isAdmin는 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다

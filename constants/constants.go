@@ -80,15 +80,16 @@ const (
 	CommandPrefixLength = 1 // "!" 길이
 )
 
-// 티어별 색상 (ANSI 색상 코드)
+// 티어별 색상
 const (
-	ColorBronze   = "🤎" // 브론즈
-	ColorSilver   = "🩶" // 실버
-	ColorGold     = "🟡" // 골드
-	ColorPlatinum = "🟢" // 플래티넘
-	ColorDiamond  = "🔵" // 다이아몬드
-	ColorRuby     = "🔴" // 루비
-	ColorDefault  = "⚪" // 기본/언랭크
+	ColorTierBronze   = 0xA25B1F // 브론즈 - 갈색
+	ColorTierSilver   = 0x495E78 // 실버 - 은색
+	ColorTierGold     = 0xE09E37 // 골드 - 금색
+	ColorTierPlatinum = 0x6DDFA8 // 플래티넘 - 다크터쿼이즈
+	ColorTierDiamond  = 0x50B1F6 // 다이아몬드 - 닷저블루
+	ColorTierRuby     = 0xEA3364 // 루비 - 루비색
+	ColorTierMaster   = 0x8A2BE2 // 마스터 - 블루바이올렛
+	ColorTierDefault  = 0x36393F // 기본/언랭크 - 디스코드 다크그레이
 )
 
 // 환경 변수 키
