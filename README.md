@@ -1,4 +1,4 @@
-# 알고리즘 행사 (가제)를 위한 디스코드 봇
+# 알고리즘 경진대회 디스코드 봇
 
 백준(Baekjoon) 알고리즘 문제 풀이 점수를 집계하여 스코어보드를 제공하는 디스코드 봇입니다.
 
@@ -6,10 +6,11 @@
 
 - 🎯 백준 사용자 자동 등록 및 티어 확인
 - 📊 solved.ac API를 활용한 실시간 점수 계산  
-- 🏆 자동 스코어보드 공개 (스케줄링 가능)
+- 🎨 티어별 ANSI 색상 지원 (참가자 목록)
 - 🔒 블랙아웃 모드 지원 (스코어보드 비공개)
 - ⚡ 도전/기본/연습 문제에 따른 차등 점수 (1.4배/1.0배/0.5배)
 - 🛠️ 대회 생성 및 관리 기능
+- ⏰ 자동 스코어보드 전송 (시간 설정 가능)
 - 💬 DM 및 서버 채널 모두 지원
 
 ## 점수 계산 방식
@@ -33,12 +34,20 @@
 ## 설치 및 실행
 
 ### 1. 환경 설정
-```bash
-# Discord Bot Token 설정 (필수)
-export DISCORD_BOT_TOKEN="your_discord_bot_token_here"
+`.env` 파일을 생성하고 다음 내용을 추가하세요:
 
-# Discord Channel ID 설정 (자동 스코어보드 전송용, 선택사항)  
+```bash
+# Discord Bot Configuration (필수)
+export DISCORD_BOT_TOKEN="your_discord_bot_token_here"
 export DISCORD_CHANNEL_ID="your_channel_id_here"
+
+# Scoreboard Schedule Configuration (선택사항)
+export SCOREBOARD_HOUR="9"      # 스코어보드 전송 시간 (0-23)
+export SCOREBOARD_MINUTE="0"    # 스코어보드 전송 분 (0-59)
+
+# 기타 설정 (선택사항)
+export LOG_LEVEL="INFO"         # 로그 레벨 (DEBUG, INFO, WARN, ERROR)
+export DEBUG_MODE="false"       # 디버그 모드
 ```
 
 ### 2. 의존성 설치
@@ -46,8 +55,12 @@ export DISCORD_CHANNEL_ID="your_channel_id_here"
 go mod tidy
 ```
 
-### 3. 봇 실행
+### 3. 환경 변수 로드 및 봇 실행
 ```bash
+# 환경 변수 로드
+source .env
+
+# 봇 실행
 go run main.go
 ```
 
@@ -67,7 +80,7 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 ## 사용법
 
 ### 참가자 명령어
-- `!참가 <이름> <백준ID>` 또는 `!register <이름> <백준ID>` - 대회 참가 신청
+- `!등록 <이름> <백준ID>` 또는 `!register <이름> <백준ID>` - 대회 등록 신청
 - `!스코어보드` 또는 `!scoreboard` - 현재 스코어보드 확인 (서버에서만)
 - `!참가자` 또는 `!participants` - 참가자 목록 확인
 - `!도움말` 또는 `!help` - 도움말 표시
@@ -81,10 +94,11 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 - `!대회 update <필드> <값>` - 대회 정보 수정
   - 필드: name, start, end
   - 예시: `!대회 update name 대회명`
+- `!삭제 <백준ID>` - 참가자 삭제
 
 ## 자동 스코어보드
 
-- **전송 시간**: 매일 오전 9시 (환경변수로 설정 가능)
+- **전송 시간**: 기본 오전 9시 (`SCOREBOARD_HOUR`, `SCOREBOARD_MINUTE`로 설정 가능)
 - **블랙아웃**: 대회 종료 3일 전부터 자동 비공개 또는 수동 설정
 - **채널 설정**: `DISCORD_CHANNEL_ID` 환경변수로 지정
 - **활성화 조건**: `DISCORD_CHANNEL_ID`가 설정된 경우에만 활성화
@@ -107,7 +121,7 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 discord-bot/
 ├── main.go              # 애플리케이션 진입점
 ├── app/
-│   └── app.go          # 애플리케이션 생명주기 관리
+│   └── app.go           # 애플리케이션 생명주기 관리
 ├── config/
 │   └── config.go        # 구조화된 환경 설정 관리
 ├── constants/
