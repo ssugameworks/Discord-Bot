@@ -59,7 +59,7 @@ func NewSolvedACClient() *SolvedACClient {
 // 지정된 핸들의 사용자 정보를 가져옵니다
 func (c *SolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 	if !utils.IsValidBaekjoonID(handle) {
-		return nil, fmt.Errorf("invalid handle format: %s", handle)
+		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/show?handle=%s", c.baseURL, handle)
@@ -80,21 +80,21 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 
 		resp, err := c.client.Get(url)
 		if err != nil {
-			lastErr = fmt.Errorf("failed to fetch user info: %w", err)
+			lastErr = fmt.Errorf("사용자 정보 조회 실패: %w", err)
 			utils.Warn("Attempt %d failed for user %s: %v", attempt+1, handle, err)
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusTooManyRequests {
-			lastErr = fmt.Errorf("rate limited")
+			lastErr = fmt.Errorf("요청 한도 초과")
 			utils.Warn("Rate limited for user %s, attempt %d", handle, attempt+1)
 			time.Sleep(constants.RetryDelay * 2)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("API returned status %d", resp.StatusCode)
+			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
 			utils.Warn("API returned non-200 status for user %s: %d", handle, resp.StatusCode)
 			if resp.StatusCode >= 500 {
 				continue // 서버 에러는 재시도
@@ -104,14 +104,14 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			lastErr = fmt.Errorf("failed to read response: %w", err)
+			lastErr = fmt.Errorf("응답 읽기 실패: %w", err)
 			utils.Error("Failed to read response body for user %s: %v", handle, err)
 			continue
 		}
 
 		var userInfo UserInfo
 		if err := json.Unmarshal(body, &userInfo); err != nil {
-			lastErr = fmt.Errorf("failed to parse user info: %w", err)
+			lastErr = fmt.Errorf("사용자 정보 파싱 실패: %w", err)
 			utils.Error("Failed to parse user info for %s: %v", handle, err)
 			continue
 		}
@@ -128,7 +128,7 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 // 지정된 사용자의 TOP 100 문제를 가져옵니다
 func (c *SolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
 	if !utils.IsValidBaekjoonID(handle) {
-		return nil, fmt.Errorf("invalid handle format: %s", handle)
+		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/top_100?handle=%s", c.baseURL, handle)
@@ -149,21 +149,21 @@ func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Resp
 
 		resp, err := c.client.Get(url)
 		if err != nil {
-			lastErr = fmt.Errorf("failed to fetch top 100: %w", err)
+			lastErr = fmt.Errorf("TOP 100 조회 실패: %w", err)
 			utils.Warn("Attempt %d failed for top 100 %s: %v", attempt+1, handle, err)
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusTooManyRequests {
-			lastErr = fmt.Errorf("rate limited")
+			lastErr = fmt.Errorf("요청 한도 초과")
 			utils.Warn("Rate limited for top 100 %s, attempt %d", handle, attempt+1)
 			time.Sleep(constants.RetryDelay * 2)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("API returned status %d", resp.StatusCode)
+			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
 			utils.Warn("API returned non-200 status for top 100 %s: %d", handle, resp.StatusCode)
 			if resp.StatusCode >= 500 {
 				continue // 서버 에러는 재시도
@@ -173,14 +173,14 @@ func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Resp
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			lastErr = fmt.Errorf("failed to read response: %w", err)
+			lastErr = fmt.Errorf("응답 읽기 실패: %w", err)
 			utils.Error("Failed to read top 100 response body for %s: %v", handle, err)
 			continue
 		}
 
 		var top100 Top100Response
 		if err := json.Unmarshal(body, &top100); err != nil {
-			lastErr = fmt.Errorf("failed to parse top 100: %w", err)
+			lastErr = fmt.Errorf("TOP 100 파싱 실패: %w", err)
 			utils.Error("Failed to parse top 100 for %s: %v", handle, err)
 			continue
 		}

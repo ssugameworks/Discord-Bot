@@ -32,7 +32,7 @@ func NewScoreboardManager(storage *storage.Storage) *ScoreboardManager {
 func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
 	competition := sm.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
-		return nil, fmt.Errorf("no active competition")
+		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
 
 	// 블랙아웃 체크
