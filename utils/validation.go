@@ -3,6 +3,7 @@ package utils
 import (
 	"discord-bot/constants"
 	"discord-bot/models"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -35,6 +36,49 @@ func IsValidDateString(dateStr string) bool {
 
 func IsValidDateRange(startDate, endDate time.Time) bool {
 	return !endDate.Before(startDate)
+}
+
+// ParseDateWithValidation 날짜 문자열을 파싱하고 유효성을 검사합니다
+func ParseDateWithValidation(dateStr, fieldName string) (time.Time, error) {
+	if dateStr == "" {
+		return time.Time{}, fmt.Errorf("%s 날짜가 비어있습니다", fieldName)
+	}
+	
+	parsedDate, err := time.Parse(constants.DateFormat, dateStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("%s 날짜 형식이 올바르지 않습니다: %s (YYYY-MM-DD 형식으로 입력하세요)", fieldName, dateStr)
+	}
+	
+	return parsedDate, nil
+}
+
+// ParseDateRange 시작일과 종료일을 파싱하고 범위를 검증합니다
+func ParseDateRange(startDateStr, endDateStr string) (startDate, endDate time.Time, err error) {
+	startDate, err = ParseDateWithValidation(startDateStr, "start")
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	
+	endDate, err = ParseDateWithValidation(endDateStr, "end")
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	
+	if !IsValidDateRange(startDate, endDate) {
+		return time.Time{}, time.Time{}, fmt.Errorf("종료일(%s)은 시작일(%s)보다 이전일 수 없습니다", 
+			endDateStr, startDateStr)
+	}
+	
+	return startDate, endDate, nil
+}
+
+// ValidateAndParseCompetitionDates 대회 생성용 날짜들을 검증하고 파싱합니다
+func ValidateAndParseCompetitionDates(name, startDateStr, endDateStr string) (time.Time, time.Time, error) {
+	if strings.TrimSpace(name) == "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("대회명이 비어있습니다")
+	}
+	
+	return ParseDateRange(startDateStr, endDateStr)
 }
 
 // 문자열 처리

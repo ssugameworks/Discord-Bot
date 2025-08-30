@@ -74,29 +74,11 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 	startDateStr := params[1]
 	endDateStr := params[2]
 
-	startDate, err := time.Parse(constants.DateFormat, startDateStr)
+	startDate, endDate, err := utils.ValidateAndParseCompetitionDates(name, startDateStr, endDateStr)
 	if err != nil {
-		botErr := errors.NewValidationError("INVALID_START_DATE",
-			fmt.Sprintf("Invalid start date format: %s", startDateStr),
-			"시작일 형식이 올바르지 않습니다. (YYYY-MM-DD)")
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
-		return
-	}
-
-	endDate, err := time.Parse(constants.DateFormat, endDateStr)
-	if err != nil {
-		botErr := errors.NewValidationError("INVALID_END_DATE",
-			fmt.Sprintf("Invalid end date format: %s", endDateStr),
-			"종료일 형식이 올바르지 않습니다. (YYYY-MM-DD)")
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
-		return
-	}
-
-	if endDate.Before(startDate) {
-		err := errors.NewValidationError("INVALID_DATE_RANGE",
-			"End date is before start date",
-			"종료일이 시작일보다 빠릅니다.")
-		errors.HandleDiscordError(s, m.ChannelID, err)
+		errorHandlers.Validation().HandleInvalidParams("INVALID_COMPETITION_DATES",
+			fmt.Sprintf("Invalid competition dates: %v", err),
+			fmt.Sprintf("날짜 오류: %v", err))
 		return
 	}
 
@@ -261,20 +243,16 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 }
 
 func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
-	startDate, err := time.Parse(constants.DateFormat, dateStr)
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
+	startDate, err := utils.ParseDateWithValidation(dateStr, "start")
 	if err != nil {
-		botErr := errors.NewValidationError("INVALID_START_DATE",
-			fmt.Sprintf("Invalid start date format: %s", dateStr),
-			"시작일 형식이 올바르지 않습니다. (YYYY-MM-DD)")
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.Validation().HandleInvalidDateFormat("START")
 		return
 	}
 
-	if startDate.After(competition.EndDate) {
-		err := errors.NewValidationError("INVALID_DATE_RANGE",
-			"Start date cannot be after end date",
-			"시작일이 종료일보다 늦을 수 없습니다.")
-		errors.HandleDiscordError(s, m.ChannelID, err)
+	if !utils.IsValidDateRange(startDate, competition.EndDate) {
+		errorHandlers.Validation().HandleInvalidDateRange()
 		return
 	}
 
@@ -294,20 +272,16 @@ func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *dis
 }
 
 func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
-	endDate, err := time.Parse(constants.DateFormat, dateStr)
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
+	endDate, err := utils.ParseDateWithValidation(dateStr, "end")
 	if err != nil {
-		botErr := errors.NewValidationError("INVALID_END_DATE",
-			fmt.Sprintf("Invalid end date format: %s", dateStr),
-			"종료일 형식이 올바르지 않습니다. (YYYY-MM-DD)")
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.Validation().HandleInvalidDateFormat("END")
 		return
 	}
 
-	if endDate.Before(competition.StartDate) {
-		err := errors.NewValidationError("INVALID_DATE_RANGE",
-			"End date cannot be before start date",
-			"종료일이 시작일보다 빠를 수 없습니다.")
-		errors.HandleDiscordError(s, m.ChannelID, err)
+	if !utils.IsValidDateRange(competition.StartDate, endDate) {
+		errorHandlers.Validation().HandleInvalidDateRange()
 		return
 	}
 
