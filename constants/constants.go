@@ -7,14 +7,18 @@ const (
 	ParticipantsFileName = "participants.json"
 	CompetitionFileName  = "competition.json"
 	FilePermission       = 0644
+	BackupFileSuffix     = ".corrupted"
+	JSONIndentSpaces     = "  "
 )
 
 // API 관련 상수
 const (
-	SolvedACBaseURL = "https://solved.ac/api/v3"
-	APITimeout      = 30 * time.Second
-	MaxRetries      = 3
-	RetryDelay      = 1 * time.Second
+	SolvedACBaseURL       = "https://solved.ac/api/v3"
+	APITimeout            = 30 * time.Second
+	MaxRetries            = 3
+	RetryDelay            = 1 * time.Second
+	APIRetryMultiplier    = 2
+	MaxConcurrentRequests = 5
 )
 
 // 점수 계산 상수
@@ -29,6 +33,8 @@ const (
 	BlackoutDays          = 3
 	DailyScoreboardHour   = 9
 	DailyScoreboardMinute = 0
+	SchedulerInterval     = 24 * time.Hour
+	SchedulerTimeout      = 30 * time.Second
 )
 
 // Discord 관련 상수
@@ -70,8 +76,12 @@ const (
 
 // 문자열 크기 제한
 const (
-	MaxUsernameLength = 15
-	TruncateIndicator = "..."
+	MaxUsernameLength     = 15
+	TruncateIndicator     = "..."
+	ScoreboardRankWidth   = 4
+	ScoreboardNameWidth   = 15
+	ScoreboardScoreWidth  = 6
+	ScoreboardSeparator   = "──────────────────────────────"
 )
 
 // 메시지 템플릿
