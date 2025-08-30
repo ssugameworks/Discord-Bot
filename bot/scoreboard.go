@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -81,19 +82,50 @@ func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competit
 	return nil
 }
 
-// collectScoreData 참가자들의 점수 데이터를 수집합니다
+// collectScoreData 참가자들의 점수 데이터를 병렬로 수집합니다
 func (sm *ScoreboardManager) collectScoreData(participants []models.Participant) ([]models.ScoreData, error) {
-	scores := make([]models.ScoreData, 0, len(participants))
-
-	for _, participant := range participants {
-		scoreData, err := sm.calculateParticipantScore(participant)
-		if err != nil {
-			// 개별 참가자 에러는 로그만 남기고 계속 진행
-			continue
-		}
-		scores = append(scores, scoreData)
+	if len(participants) == 0 {
+		return []models.ScoreData{}, nil
 	}
 
+	// 병렬 처리를 위한 채널과 대기 그룹
+	scoreChan := make(chan models.ScoreData, len(participants))
+	errorChan := make(chan error, len(participants))
+	semaphore := make(chan struct{}, constants.MaxConcurrentRequests)
+	var wg sync.WaitGroup
+
+	// 각 참가자에 대해 병렬로 점수 계산
+	for _, participant := range participants {
+		wg.Add(1)
+		go func(p models.Participant) {
+			defer wg.Done()
+			
+			// 동시 요청 수 제한
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
+			scoreData, err := sm.calculateParticipantScore(p)
+			if err != nil {
+				utils.Warn("참가자 %s 점수 계산 실패: %v", p.Name, err)
+				errorChan <- err
+				return
+			}
+			scoreChan <- scoreData
+		}(participant)
+	}
+
+	// 고루틴들이 완료될 때까지 대기
+	wg.Wait()
+	close(scoreChan)
+	close(errorChan)
+
+	// 결과 수집
+	var scores []models.ScoreData
+	for score := range scoreChan {
+		scores = append(scores, score)
+	}
+
+	utils.Info("참가자 %d명 중 %d명의 점수를 성공적으로 계산했습니다", len(participants), len(scores))
 	return scores, nil
 }
 
@@ -154,17 +186,18 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 
 	var sb strings.Builder
 	sb.WriteString("```\n")
-	sb.WriteString(fmt.Sprintf("%-4s %-*s %6s\n",
-		"순위", constants.MaxUsernameLength, "이름", "점수"))
-	sb.WriteString("──────────────────────────────\n")
+	sb.WriteString(fmt.Sprintf("%-*s %-*s %*s\n",
+		constants.ScoreboardRankWidth, "순위", 
+		constants.ScoreboardNameWidth, "이름", 
+		constants.ScoreboardScoreWidth, "점수"))
+	sb.WriteString(constants.ScoreboardSeparator + "\n")
 
 	for i, score := range scores {
 		rank := i + 1
-		sb.WriteString(fmt.Sprintf("%-4d %-*s %6.0f\n",
-			rank,
-			constants.MaxUsernameLength,
-			utils.TruncateString(score.Name, constants.MaxUsernameLength),
-			score.Score))
+		sb.WriteString(fmt.Sprintf("%-*d %-*s %*.0f\n",
+			constants.ScoreboardRankWidth, rank,
+			constants.ScoreboardNameWidth, utils.TruncateString(score.Name, constants.ScoreboardNameWidth),
+			constants.ScoreboardScoreWidth, score.Score))
 	}
 
 	sb.WriteString("```")
