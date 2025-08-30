@@ -4,6 +4,7 @@ import (
 	"discord-bot/constants"
 	"discord-bot/errors"
 	"discord-bot/models"
+	"discord-bot/utils"
 	"fmt"
 	"strings"
 	"time"
@@ -25,20 +26,18 @@ func NewCompetitionHandler(ch *CommandHandler) *CompetitionHandler {
 
 // HandleCompetition은 대회 관련 명령어를 처리합니다
 func (ch *CompetitionHandler) HandleCompetition(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
 	// DM이 아닌 경우에만 관리자 권한 확인
 	if m.GuildID != "" && !ch.commandHandler.isAdmin(s, m) {
-		err := errors.NewValidationError("INSUFFICIENT_PERMISSIONS",
-			"User does not have administrator permissions",
-			"❌  관리자 권한이 필요합니다.")
-		errors.HandleDiscordError(s, m.ChannelID, err)
+		errorHandlers.Validation().HandleInsufficientPermissions()
 		return
 	}
 
 	if len(params) == 0 {
-		err := errors.NewValidationError("COMPETITION_INVALID_PARAMS",
+		errorHandlers.Validation().HandleInvalidParams("COMPETITION_INVALID_PARAMS",
 			"Invalid competition parameters",
 			"사용법: `!대회 <create|status|blackout|update>`")
-		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}
 
@@ -61,6 +60,8 @@ func (ch *CompetitionHandler) HandleCompetition(s *discordgo.Session, m *discord
 }
 
 func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
 	if len(params) < 3 {
 		err := errors.NewValidationError("COMPETITION_CREATE_INVALID_PARAMS",
 			"Invalid competition create parameters",
@@ -101,10 +102,7 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 
 	err = ch.commandHandler.storage.CreateCompetition(name, startDate, endDate)
 	if err != nil {
-		botErr := errors.NewSystemError("COMPETITION_CREATE_FAILED",
-			"Failed to create competition", err)
-		botErr.UserMsg = "대회 생성에 실패했습니다."
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.System().HandleCompetitionCreateFailed(err)
 		return
 	}
 

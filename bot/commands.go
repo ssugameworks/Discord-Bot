@@ -102,11 +102,12 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 }
 
 func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
 	if len(params) < 2 {
-		err := errors.NewValidationError("REGISTER_INVALID_PARAMS",
+		errorHandlers.Validation().HandleInvalidParams("REGISTER_INVALID_PARAMS",
 			"Invalid register parameters",
 			"사용법: `!등록 <이름> <백준ID>`")
-		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}
 
@@ -115,19 +116,13 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 
 	userInfo, err := ch.client.GetUserInfo(baekjoonID)
 	if err != nil {
-		botErr := errors.NewAPIError("BAEKJOON_USER_NOT_FOUND",
-			fmt.Sprintf("Baekjoon user '%s' not found", baekjoonID), err)
-		botErr.UserMsg = fmt.Sprintf("백준 사용자 '%s'를 찾을 수 없습니다.", baekjoonID)
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return
 	}
 
 	err = ch.storage.AddParticipant(name, baekjoonID, userInfo.Tier, userInfo.Rating)
 	if err != nil {
-		botErr := errors.NewDuplicateError("PARTICIPANT_ALREADY_EXISTS",
-			fmt.Sprintf("Participant with Baekjoon ID '%s' already exists", baekjoonID),
-			fmt.Sprintf("백준 ID '%s'로 이미 등록된 참가자가 있습니다.", baekjoonID))
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.Data().HandleParticipantAlreadyExists(baekjoonID)
 		return
 	}
 
@@ -142,13 +137,12 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 }
 
 func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.MessageCreate) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
 	isAdmin := ch.isAdmin(s, m)
 	embed, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
-		botErr := errors.NewSystemError("SCOREBOARD_GENERATION_FAILED",
-			"Failed to generate scoreboard", err)
-		botErr.UserMsg = "스코어보드 생성에 실패했습니다."
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.System().HandleScoreboardGenerationFailed(err)
 		return
 	}
 
@@ -178,18 +172,19 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 }
 
 func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+	
 	// 관리자 권한 확인
 	if !ch.isAdmin(s, m) {
-		s.ChannelMessageSend(m.ChannelID, "❌ 이 명령어는 관리자만 사용할 수 있습니다.")
+		errorHandlers.Validation().HandleInsufficientPermissions()
 		return
 	}
 
 	// 파라미터 확인
 	if len(params) < 1 {
-		err := errors.NewValidationError("REMOVE_INVALID_PARAMS",
+		errorHandlers.Validation().HandleInvalidParams("REMOVE_INVALID_PARAMS",
 			"Invalid remove parameters",
 			"사용법: `!삭제 <백준ID>`")
-		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}
 
@@ -197,20 +192,16 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 
 	// 백준 ID 유효성 검사
 	if !utils.IsValidBaekjoonID(baekjoonID) {
-		err := errors.NewValidationError("REMOVE_INVALID_BAEKJOON_ID",
+		errorHandlers.Validation().HandleInvalidParams("REMOVE_INVALID_BAEKJOON_ID",
 			"Invalid Baekjoon ID format",
 			"유효하지 않은 백준 ID 형식입니다.")
-		errors.HandleDiscordError(s, m.ChannelID, err)
 		return
 	}
 
 	// 참가자 삭제
 	err := ch.storage.RemoveParticipant(baekjoonID)
 	if err != nil {
-		botErr := errors.NewNotFoundError("PARTICIPANT_NOT_FOUND",
-			fmt.Sprintf("Participant with Baekjoon ID '%s' not found", baekjoonID),
-			fmt.Sprintf("백준 ID '%s'로 등록된 참가자를 찾을 수 없습니다.", baekjoonID))
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
+		errorHandlers.Data().HandleParticipantNotFound(baekjoonID)
 		return
 	}
 
