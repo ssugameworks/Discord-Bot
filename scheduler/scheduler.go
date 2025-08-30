@@ -3,7 +3,8 @@ package scheduler
 import (
 	"discord-bot/bot"
 	"discord-bot/config"
-	"log"
+	"discord-bot/constants"
+	"discord-bot/utils"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,7 +28,7 @@ func NewScheduler(session *discordgo.Session, config *config.Config, scoreboardM
 }
 
 func (s *Scheduler) StartDailyScoreboard() {
-	s.ticker = time.NewTicker(24 * time.Hour)
+	s.ticker = time.NewTicker(constants.SchedulerInterval)
 
 	go func() {
 		for {
@@ -40,7 +41,7 @@ func (s *Scheduler) StartDailyScoreboard() {
 		}
 	}()
 
-	log.Println("일일 스코어보드 스케줄러가 시작되었습니다.")
+	utils.Info("일일 스코어보드 스케줄러가 시작되었습니다")
 }
 
 func (s *Scheduler) StartCustomSchedule(hour, minute int) {
@@ -48,7 +49,7 @@ func (s *Scheduler) StartCustomSchedule(hour, minute int) {
 	nextRun := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
 
 	if nextRun.Before(now) {
-		nextRun = nextRun.Add(24 * time.Hour)
+		nextRun = nextRun.Add(constants.SchedulerInterval)
 	}
 
 	duration := nextRun.Sub(now)
@@ -57,7 +58,7 @@ func (s *Scheduler) StartCustomSchedule(hour, minute int) {
 		time.Sleep(duration)
 		s.sendDailyScoreboard()
 
-		ticker := time.NewTicker(24 * time.Hour)
+		ticker := time.NewTicker(constants.SchedulerInterval)
 		defer ticker.Stop()
 
 		for {
@@ -70,22 +71,22 @@ func (s *Scheduler) StartCustomSchedule(hour, minute int) {
 		}
 	}()
 
-	log.Printf("일일 스코어보드 스케줄러가 매일 %02d:%02d에 실행되도록 설정되었습니다.", hour, minute)
+	utils.Info("일일 스코어보드 스케줄러가 매일 %02d:%02d에 실행되도록 설정되었습니다", hour, minute)
 }
 
 func (s *Scheduler) sendDailyScoreboard() {
 	if s.config.Discord.ChannelID == "" {
-		log.Println("DISCORD_CHANNEL_ID가 설정되지 않았습니다.")
+		utils.Error("채널 ID가 설정되지 않아 스코어보드를 전송할 수 없습니다")
 		return
 	}
 
 	err := s.scoreboardManager.SendDailyScoreboard(s.session, s.config.Discord.ChannelID)
 	if err != nil {
-		log.Printf("일일 스코어보드 전송 실패: %v", err)
+		utils.Error("일일 스코어보드 전송 실패: %v", err)
 		return
 	}
 
-	log.Println("일일 스코어보드를 성공적으로 전송했습니다.")
+	utils.Info("일일 스코어보드를 성공적으로 전송했습니다")
 }
 
 func (s *Scheduler) Stop() {
@@ -99,5 +100,5 @@ func (s *Scheduler) Stop() {
 		// channel is full or no receiver, skip
 	}
 
-	log.Println("스케줄러가 중지되었습니다.")
+	utils.Info("스케줄러가 중지되었습니다")
 }
