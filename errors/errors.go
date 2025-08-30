@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// ErrorType은 오류의 종류를 나타냅니다
+// ErrorType 오류의 종류를 나타냅니다
 type ErrorType int
 
 const (
@@ -20,7 +20,7 @@ const (
 	TypeSystem
 )
 
-// AppError는 애플리케이션에서 발생하는 구조화된 오류를 표현합니다
+// AppError 애플리케이션에서 발생하는 구조화된 오류를 표현합니다
 type AppError struct {
 	Type     ErrorType
 	Code     string
@@ -36,7 +36,7 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
 }
 
-// GetUserMessage는 사용자에게 표시할 메시지를 반환합니다
+// GetUserMessage 사용자에게 표시할 메시지를 반환합니다
 func (e *AppError) GetUserMessage() string {
 	if e.UserMsg != "" {
 		return e.UserMsg
@@ -46,7 +46,7 @@ func (e *AppError) GetUserMessage() string {
 
 // 오류 생성 함수들
 
-// NewValidationError는 입력값 검증 오류를 생성합니다
+// NewValidationError 입력값 검증 오류를 생성합니다
 func NewValidationError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypeValidation,
@@ -56,7 +56,7 @@ func NewValidationError(code, message, userMsg string) *AppError {
 	}
 }
 
-// NewAPIError는 외부 API 연동 오류를 생성합니다
+// NewAPIError 외부 API 연동 오류를 생성합니다
 func NewAPIError(code, message string, err error) *AppError {
 	return &AppError{
 		Type:     TypeAPI,
@@ -67,7 +67,7 @@ func NewAPIError(code, message string, err error) *AppError {
 	}
 }
 
-// NewNotFoundError는 리소스를 찾을 수 없는 오류를 생성합니다
+// NewNotFoundError 리소스를 찾을 수 없는 오류를 생성합니다
 func NewNotFoundError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypeNotFound,
@@ -77,7 +77,7 @@ func NewNotFoundError(code, message, userMsg string) *AppError {
 	}
 }
 
-// NewDuplicateError는 중복 리소스 오류를 생성합니다
+// NewDuplicateError 중복 리소스 오류를 생성합니다
 func NewDuplicateError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypeDuplicate,
@@ -87,7 +87,7 @@ func NewDuplicateError(code, message, userMsg string) *AppError {
 	}
 }
 
-// NewPermissionError는 권한 관련 오류를 생성합니다
+// NewPermissionError 권한 관련 오류를 생성합니다
 func NewPermissionError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypePermission,
@@ -97,7 +97,7 @@ func NewPermissionError(code, message, userMsg string) *AppError {
 	}
 }
 
-// NewCompetitionError는 대회 관련 오류를 생성합니다
+// NewCompetitionError 대회 관련 오류를 생성합니다
 func NewCompetitionError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypeCompetition,
@@ -107,7 +107,7 @@ func NewCompetitionError(code, message, userMsg string) *AppError {
 	}
 }
 
-// NewSystemError는 시스템 내부 오류를 생성합니다
+// NewSystemError 시스템 내부 오류를 생성합니다
 func NewSystemError(code, message string, err error) *AppError {
 	return &AppError{
 		Type:     TypeSystem,
@@ -120,7 +120,7 @@ func NewSystemError(code, message string, err error) *AppError {
 
 // Discord 메시지 관련 헬퍼 함수들
 
-// HandleDiscordError는 오류를 처리하고 Discord 채널에 메시지를 전송합니다
+// HandleDiscordError 오류를 처리하고 Discord 채널에 메시지를 전송합니다
 func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 	if appErr, ok := err.(*AppError); ok {
 		// 로그에 상세 정보 기록
@@ -138,17 +138,17 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 	}
 }
 
-// SendDiscordSuccess는 성공 메시지를 Discord 채널에 전송합니다
+// SendDiscordSuccess 성공 메시지를 Discord 채널에 전송합니다
 func SendDiscordSuccess(s *discordgo.Session, channelID, message string) {
 	s.ChannelMessageSend(channelID, constants.EmojiSuccess+" "+message)
 }
 
-// SendDiscordInfo는 정보 메시지를 Discord 채널에 전송합니다
+// SendDiscordInfo 정보 메시지를 Discord 채널에 전송합니다
 func SendDiscordInfo(s *discordgo.Session, channelID, message string) {
 	s.ChannelMessageSend(channelID, constants.EmojiInfo+" "+message)
 }
 
-// SendDiscordWarning는 경고 메시지를 Discord 채널에 전송합니다
+// SendDiscordWarning 경고 메시지를 Discord 채널에 전송합니다
 func SendDiscordWarning(s *discordgo.Session, channelID, message string) {
 	s.ChannelMessageSend(channelID, constants.EmojiWarning+" "+message)
 }
