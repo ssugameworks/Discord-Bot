@@ -127,7 +127,7 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 	}
 
 	response := fmt.Sprintf("🏆 **%s** 대회가 진행 중입니다!\n"+
-		"📅 **기간:** %s ~ %s\n"+
+		"📅 **기간:** %s\n"+
 		"📊 **상태:** %s\n"+
 		"🔒 **스코어보드:** %s\n"+
 		"👥 **참가자 수:** %d명",
