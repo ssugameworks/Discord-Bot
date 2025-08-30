@@ -1,9 +1,12 @@
 package app
 
 import (
+	"discord-bot/api"
 	"discord-bot/bot"
 	"discord-bot/config"
+	"discord-bot/interfaces"
 	"discord-bot/scheduler"
+	"discord-bot/scoring"
 	"discord-bot/storage"
 	"fmt"
 	"log"
@@ -17,7 +20,8 @@ import (
 type Application struct {
 	config            *config.Config
 	session           *discordgo.Session
-	storage           *storage.Storage
+	storage           interfaces.StorageRepository
+	apiClient         interfaces.APIClient
 	commandHandler    *bot.CommandHandler
 	scoreboardManager *bot.ScoreboardManager
 	scheduler         *scheduler.Scheduler
@@ -30,7 +34,7 @@ func New() (*Application, error) {
 		return nil, err
 	}
 
-	if err := app.initializeStorage(); err != nil {
+	if err := app.initializeDependencies(); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +56,13 @@ func (app *Application) loadConfig() error {
 	return nil
 }
 
-func (app *Application) initializeStorage() error {
-	app.storage = storage.NewStorage()
+func (app *Application) initializeDependencies() error {
+	// 단일 API 클라이언트 인스턴스 생성
+	app.apiClient = api.NewSolvedACClient()
+	
+	// API 클라이언트를 주입하여 Storage 생성
+	app.storage = storage.NewStorage(app.apiClient)
+	
 	return nil
 }
 
@@ -69,8 +78,10 @@ func (app *Application) initializeDiscord() error {
 }
 
 func (app *Application) setupHandlers() {
-	app.commandHandler = bot.NewCommandHandler(app.storage)
-	app.scoreboardManager = bot.NewScoreboardManager(app.storage)
+	// 의존성 주입을 통한 컴포넌트 생성
+	calculator := scoring.NewScoreCalculator(app.apiClient)
+	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient)
+	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)

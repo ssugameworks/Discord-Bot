@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"discord-bot/api"
 	"discord-bot/constants"
+	"discord-bot/interfaces"
 	"discord-bot/models"
 	"discord-bot/utils"
 	"encoding/json"
@@ -12,18 +12,18 @@ import (
 	"time"
 )
 
-// Storage는 참가자와 대회 데이터를 관리하는 저장소입니다
+// Storage 참가자와 대회 데이터를 관리하는 저장소입니다
 type Storage struct {
 	participants []models.Participant
 	competition  *models.Competition
-	apiClient    *api.SolvedACClient
+	apiClient    interfaces.APIClient
 }
 
-// NewStorage는 새로운 Storage 인스턴스를 생성하고 데이터를 로드합니다
-func NewStorage() *Storage {
+// NewStorage 새로운 Storage 인스턴스를 생성하고 데이터를 로드합니다
+func NewStorage(apiClient interfaces.APIClient) interfaces.StorageRepository {
 	utils.Info("Initializing storage system")
 	s := &Storage{
-		apiClient: api.NewSolvedACClient(),
+		apiClient: apiClient,
 	}
 	s.loadData()
 	utils.Info("Storage system initialized successfully")
@@ -35,7 +35,7 @@ func (s *Storage) loadData() {
 	s.loadCompetition()
 }
 
-// loadParticipants는 참가자 데이터를 파일에서 로드합니다
+// loadParticipants 참가자 데이터를 파일에서 로드합니다
 func (s *Storage) loadParticipants() {
 	utils.Debug("Loading participants from file: %s", constants.ParticipantsFileName)
 	file, err := os.Open(constants.ParticipantsFileName)
@@ -80,7 +80,7 @@ func (s *Storage) loadParticipants() {
 	utils.Info("Loaded %d participants", len(s.participants))
 }
 
-// loadCompetition는 대회 데이터를 파일에서 로드합니다
+// loadCompetition 대회 데이터를 파일에서 로드합니다
 func (s *Storage) loadCompetition() {
 	utils.Debug("Loading competition from file: %s", constants.CompetitionFileName)
 	file, err := os.Open(constants.CompetitionFileName)
@@ -122,7 +122,7 @@ func (s *Storage) loadCompetition() {
 	utils.Info("Loaded competition: %s", s.competition.Name)
 }
 
-// SaveParticipants는 참가자 데이터를 파일에 저장합니다
+// SaveParticipants 참가자 데이터를 파일에 저장합니다
 func (s *Storage) SaveParticipants() error {
 	utils.Debug("Saving participants to file: %s", constants.ParticipantsFileName)
 	data, err := json.MarshalIndent(s.participants, "", "  ")
@@ -141,7 +141,7 @@ func (s *Storage) SaveParticipants() error {
 	return nil
 }
 
-// SaveCompetition는 대회 데이터를 파일에 저장합니다
+// SaveCompetition 대회 데이터를 파일에 저장합니다
 func (s *Storage) SaveCompetition() error {
 	if s.competition == nil {
 		utils.Debug("No competition to save")
@@ -165,7 +165,7 @@ func (s *Storage) SaveCompetition() error {
 	return nil
 }
 
-// AddParticipant는 새로운 참가자를 추가합니다
+// AddParticipant 새로운 참가자를 추가합니다
 func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating int) error {
 	// 입력값 검증
 	if err := s.validateParticipantInput(name, baekjoonID); err != nil {
@@ -211,7 +211,7 @@ func (s *Storage) checkDuplicateParticipant(baekjoonID string) error {
 func (s *Storage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	startProblemIDs := []int{}
 	startProblemCount := 0
-	
+
 	top100, err := s.apiClient.GetUserTop100(baekjoonID)
 	if err == nil {
 		for _, problem := range top100.Items {
@@ -222,7 +222,7 @@ func (s *Storage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	} else {
 		utils.Warn("Failed to load starting problems for participant %s: %v", baekjoonID, err)
 	}
-	
+
 	return startProblemIDs, startProblemCount
 }
 
@@ -253,7 +253,7 @@ func (s *Storage) GetParticipants() []models.Participant {
 
 func (s *Storage) CreateCompetition(name string, startDate, endDate time.Time) error {
 	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
-	
+
 	s.competition = &models.Competition{
 		ID:                1,
 		Name:              name,

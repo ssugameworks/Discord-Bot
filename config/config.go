@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Config는 애플리케이션의 전체 설정을 관리합니다
+// Config 애플리케이션의 전체 설정을 관리합니다
 type Config struct {
 	Discord  DiscordConfig
 	Schedule ScheduleConfig
@@ -59,7 +59,7 @@ func Load() *Config {
 	}
 }
 
-// Validate는 설정의 유효성을 검사합니다
+// Validate 설정의 유효성을 검사합니다
 func (c *Config) Validate() error {
 	if c.Discord.Token == "" {
 		return &ConfigError{
@@ -70,12 +70,12 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// IsDebugMode는 디버그 모드 여부를 반환합니다
+// IsDebugMode 디버그 모드 여부를 반환합니다
 func (c *Config) IsDebugMode() bool {
 	return c.Logging.DebugMode || strings.ToUpper(c.Logging.Level) == constants.LogLevelDebug
 }
 
-// ConfigError는 설정 관련 오류를 나타냅니다
+// ConfigError 설정 관련 오류를 나타냅니다
 type ConfigError struct {
 	Field   string
 	Message string

@@ -1,11 +1,9 @@
 package bot
 
 import (
-	"discord-bot/api"
 	"discord-bot/constants"
+	"discord-bot/interfaces"
 	"discord-bot/models"
-	"discord-bot/scoring"
-	"discord-bot/storage"
 	"discord-bot/utils"
 	"fmt"
 	"sort"
@@ -16,16 +14,16 @@ import (
 )
 
 type ScoreboardManager struct {
-	storage    *storage.Storage
-	calculator *scoring.ScoreCalculator
-	client     *api.SolvedACClient
+	storage    interfaces.StorageRepository
+	calculator interfaces.ScoreCalculator
+	client     interfaces.APIClient
 }
 
-func NewScoreboardManager(storage *storage.Storage) *ScoreboardManager {
+func NewScoreboardManager(storage interfaces.StorageRepository, calculator interfaces.ScoreCalculator, client interfaces.APIClient) *ScoreboardManager {
 	return &ScoreboardManager{
 		storage:    storage,
-		calculator: scoring.NewScoreCalculator(),
-		client:     api.NewSolvedACClient(),
+		calculator: calculator,
+		client:     client,
 	}
 }
 

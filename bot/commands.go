@@ -1,12 +1,11 @@
 package bot
 
 import (
-	"discord-bot/api"
 	"discord-bot/constants"
 	"discord-bot/errors"
+	"discord-bot/interfaces"
 	"discord-bot/models"
 	"discord-bot/scoring"
-	"discord-bot/storage"
 	"discord-bot/utils"
 	"fmt"
 	"strings"
@@ -15,17 +14,17 @@ import (
 )
 
 type CommandHandler struct {
-	storage            *storage.Storage
+	storage            interfaces.StorageRepository
 	scoreboardManager  *ScoreboardManager
-	client             *api.SolvedACClient
+	client             interfaces.APIClient
 	competitionHandler *CompetitionHandler
 }
 
-func NewCommandHandler(storage *storage.Storage) *CommandHandler {
+func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager) *CommandHandler {
 	ch := &CommandHandler{
 		storage:           storage,
-		scoreboardManager: NewScoreboardManager(storage),
-		client:            api.NewSolvedACClient(),
+		scoreboardManager: scoreboardManager,
+		client:            apiClient,
 	}
 	ch.competitionHandler = NewCompetitionHandler(ch)
 	return ch

@@ -1,20 +1,20 @@
 package scoring
 
 import (
-	"discord-bot/api"
 	"discord-bot/constants"
+	"discord-bot/interfaces"
 	"discord-bot/models"
 	"math"
 )
 
 type ScoreCalculator struct {
-	client      *api.SolvedACClient
+	client      interfaces.APIClient
 	tierManager *models.TierManager
 }
 
-func NewScoreCalculator() *ScoreCalculator {
+func NewScoreCalculator(apiClient interfaces.APIClient) interfaces.ScoreCalculator {
 	return &ScoreCalculator{
-		client:      api.NewSolvedACClient(),
+		client:      apiClient,
 		tierManager: models.NewTierManager(),
 	}
 }
@@ -63,7 +63,7 @@ func (sc *ScoreCalculator) getWeight(problemTier, startTier int) float64 {
 	}
 }
 
-// GetTierName returns the display name for a tier using the global tier manager
+// GetTierName 티어 번호에 해당하는 티어 이름을 반환합니다
 func GetTierName(tier int) string {
 	tm := models.NewTierManager()
 	return tm.GetTierName(tier)
