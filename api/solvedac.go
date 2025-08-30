@@ -89,7 +89,7 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 		if resp.StatusCode == http.StatusTooManyRequests {
 			lastErr = fmt.Errorf("요청 한도 초과")
 			utils.Warn("Rate limited for user %s, attempt %d", handle, attempt+1)
-			time.Sleep(constants.RetryDelay * 2)
+			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
 			continue
 		}
 
@@ -158,7 +158,7 @@ func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Resp
 		if resp.StatusCode == http.StatusTooManyRequests {
 			lastErr = fmt.Errorf("요청 한도 초과")
 			utils.Warn("Rate limited for top 100 %s, attempt %d", handle, attempt+1)
-			time.Sleep(constants.RetryDelay * 2)
+			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
 			continue
 		}
 

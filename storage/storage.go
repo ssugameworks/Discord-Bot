@@ -70,7 +70,7 @@ func (s *Storage) loadParticipants() {
 	if err := json.Unmarshal(data, &s.participants); err != nil {
 		utils.Error("Failed to parse participants data: %v", err)
 		// JSON 파싱 실패 시 백업 파일 생성
-		backupFile := constants.ParticipantsFileName + ".corrupted"
+		backupFile := constants.ParticipantsFileName + constants.BackupFileSuffix
 		os.WriteFile(backupFile, data, constants.FilePermission)
 		utils.Warn("Corrupted participants file backed up as %s", backupFile)
 		s.participants = []models.Participant{}
@@ -112,7 +112,7 @@ func (s *Storage) loadCompetition() {
 	if err := json.Unmarshal(data, &s.competition); err != nil {
 		utils.Error("Failed to parse competition data: %v", err)
 		// JSON 파싱 실패 시 백업 파일 생성
-		backupFile := constants.CompetitionFileName + ".corrupted"
+		backupFile := constants.CompetitionFileName + constants.BackupFileSuffix
 		os.WriteFile(backupFile, data, constants.FilePermission)
 		utils.Warn("Corrupted competition file backed up as %s", backupFile)
 		s.competition = nil
@@ -125,7 +125,7 @@ func (s *Storage) loadCompetition() {
 // SaveParticipants 참가자 데이터를 파일에 저장합니다
 func (s *Storage) SaveParticipants() error {
 	utils.Debug("Saving participants to file: %s", constants.ParticipantsFileName)
-	data, err := json.MarshalIndent(s.participants, "", "  ")
+	data, err := json.MarshalIndent(s.participants, "", constants.JSONIndentSpaces)
 	if err != nil {
 		utils.Error("Failed to marshal participants data: %v", err)
 		return err
@@ -149,7 +149,7 @@ func (s *Storage) SaveCompetition() error {
 	}
 
 	utils.Debug("Saving competition to file: %s", constants.CompetitionFileName)
-	data, err := json.MarshalIndent(s.competition, "", "  ")
+	data, err := json.MarshalIndent(s.competition, "", constants.JSONIndentSpaces)
 	if err != nil {
 		utils.Error("Failed to marshal competition data: %v", err)
 		return err
