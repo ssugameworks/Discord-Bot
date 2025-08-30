@@ -168,22 +168,47 @@ func (s *Storage) SaveCompetition() error {
 // AddParticipant는 새로운 참가자를 추가합니다
 func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating int) error {
 	// 입력값 검증
+	if err := s.validateParticipantInput(name, baekjoonID); err != nil {
+		return err
+	}
+
+	// 중복 확인
+	if err := s.checkDuplicateParticipant(baekjoonID); err != nil {
+		return err
+	}
+
+	// 시작 문제 데이터 수집
+	startProblemIDs, startProblemCount := s.fetchStartingProblems(baekjoonID)
+
+	// 참가자 생성 및 저장
+	participant := s.createParticipant(name, baekjoonID, startTier, startRating, startProblemIDs, startProblemCount)
+	return s.saveNewParticipant(participant)
+}
+
+// validateParticipantInput 참가자 입력값을 검증합니다
+func (s *Storage) validateParticipantInput(name, baekjoonID string) error {
 	if !utils.IsValidUsername(name) {
 		return fmt.Errorf("invalid username: %s", name)
 	}
 	if !utils.IsValidBaekjoonID(baekjoonID) {
 		return fmt.Errorf("invalid baekjoon ID: %s", baekjoonID)
 	}
+	return nil
+}
 
-	// 중복 확인
+// checkDuplicateParticipant 중복 참가자를 확인합니다
+func (s *Storage) checkDuplicateParticipant(baekjoonID string) error {
 	for _, p := range s.participants {
 		if p.BaekjoonID == baekjoonID {
 			utils.Warn("Attempt to add duplicate participant: %s", baekjoonID)
 			return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
 		}
 	}
+	return nil
+}
 
-	// 참가 시점의 해결한 문제들 가져오기
+// fetchStartingProblems 참가 시점의 해결한 문제들을 가져옵니다
+func (s *Storage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	startProblemIDs := []int{}
 	startProblemCount := 0
 	
@@ -197,8 +222,13 @@ func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating
 	} else {
 		utils.Warn("Failed to load starting problems for participant %s: %v", baekjoonID, err)
 	}
+	
+	return startProblemIDs, startProblemCount
+}
 
-	participant := models.Participant{
+// createParticipant 참가자 객체를 생성합니다
+func (s *Storage) createParticipant(name, baekjoonID string, startTier, startRating int, startProblemIDs []int, startProblemCount int) models.Participant {
+	return models.Participant{
 		ID:                len(s.participants) + 1,
 		Name:              utils.SanitizeString(name),
 		BaekjoonID:        baekjoonID,
@@ -208,9 +238,12 @@ func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating
 		StartProblemIDs:   startProblemIDs,
 		StartProblemCount: startProblemCount,
 	}
+}
 
+// saveNewParticipant 새 참가자를 저장합니다
+func (s *Storage) saveNewParticipant(participant models.Participant) error {
 	s.participants = append(s.participants, participant)
-	utils.Info("Added new participant: %s (%s)", name, baekjoonID)
+	utils.Info("Added new participant: %s (%s)", participant.Name, participant.BaekjoonID)
 	return s.SaveParticipants()
 }
 

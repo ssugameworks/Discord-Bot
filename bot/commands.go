@@ -32,8 +32,23 @@ func NewCommandHandler(storage *storage.Storage) *CommandHandler {
 }
 
 func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == s.State.User.ID {
+	if ch.shouldIgnoreMessage(s, m) {
 		return
+	}
+
+	command, params, isDM := ch.parseMessage(m)
+	if command == "" {
+		return
+	}
+
+	ch.routeCommand(s, m, command, params, isDM)
+}
+
+// shouldIgnoreMessage 메시지를 무시해야 하는지 확인합니다
+func (ch *CommandHandler) shouldIgnoreMessage(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	// 봇 자신의 메시지는 무시
+	if m.Author.ID == s.State.User.ID {
+		return true
 	}
 
 	// DM 디버깅 로그
@@ -41,33 +56,37 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 		fmt.Printf(constants.DMReceivedTemplate, m.Content, m.Author.Username)
 	}
 
+	return false
+}
+
+// parseMessage 메시지를 파싱하여 명령어와 매개변수를 추출합니다
+func (ch *CommandHandler) parseMessage(m *discordgo.MessageCreate) (command string, params []string, isDM bool) {
 	content := strings.TrimSpace(m.Content)
 	if !strings.HasPrefix(content, constants.CommandPrefix) {
-		return
+		return "", nil, false
 	}
 
 	args := strings.Fields(content)
 	if len(args) == 0 {
-		return
+		return "", nil, false
 	}
 
-	command := args[0][constants.CommandPrefixLength:]
-	params := args[1:]
+	command = args[0][constants.CommandPrefixLength:]
+	params = args[1:]
+	isDM = m.GuildID == ""
 
-	// DM 처리 확인
-	isDM := m.GuildID == ""
+	return command, params, isDM
+}
 
+// routeCommand 명령어를 해당 핸들러로 라우팅합니다
+func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, params []string, isDM bool) {
 	switch command {
 	case "help", "도움말":
 		ch.handleHelp(s, m)
 	case "register", "등록":
 		ch.handleRegister(s, m, params)
 	case "scoreboard", "스코어보드":
-		if isDM {
-			s.ChannelMessageSend(m.ChannelID, "❌ 스코어보드는 서버에서만 확인할 수 있습니다.")
-			return
-		}
-		ch.handleScoreboard(s, m)
+		ch.handleScoreboardCommand(s, m, isDM)
 	case "competition", "대회":
 		ch.competitionHandler.HandleCompetition(s, m, params)
 	case "participants", "참가자":
@@ -75,8 +94,22 @@ func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.Messa
 	case "remove", "삭제":
 		ch.handleRemoveParticipant(s, m, params)
 	case "ping":
-		s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+		ch.handlePing(s, m)
 	}
+}
+
+// handleScoreboardCommand 스코어보드 명령어를 처리합니다 (DM 체크 포함)
+func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *discordgo.MessageCreate, isDM bool) {
+	if isDM {
+		s.ChannelMessageSend(m.ChannelID, "❌ 스코어보드는 서버에서만 확인할 수 있습니다.")
+		return
+	}
+	ch.handleScoreboard(s, m)
+}
+
+// handlePing ping 명령어를 처리합니다
+func (ch *CommandHandler) handlePing(s *discordgo.Session, m *discordgo.MessageCreate) {
+	s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
 }
 
 func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageCreate) {
