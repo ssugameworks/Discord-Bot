@@ -2,6 +2,7 @@ package utils
 
 import (
 	"discord-bot/constants"
+	"discord-bot/models"
 	"regexp"
 	"strings"
 	"time"
@@ -102,24 +103,8 @@ func SafeIntAdd(a, b int) int {
 	return a + b
 }
 
-// 티어별 색상값 반환
+// GetTierColor returns tier color using the global tier manager (deprecated - use TierManager directly)
 func GetTierColor(tier int) int {
-	switch {
-	case tier >= 1 && tier <= 5:   // Bronze V-I
-		return constants.ColorTierBronze
-	case tier >= 6 && tier <= 10:  // Silver V-I  
-		return constants.ColorTierSilver
-	case tier >= 11 && tier <= 15: // Gold V-I
-		return constants.ColorTierGold
-	case tier >= 16 && tier <= 20: // Platinum V-I
-		return constants.ColorTierPlatinum
-	case tier >= 21 && tier <= 25: // Diamond V-I
-		return constants.ColorTierDiamond
-	case tier >= 26 && tier <= 30: // Ruby V-I
-		return constants.ColorTierRuby
-	case tier >= 31:                // Master+
-		return constants.ColorTierMaster
-	default:
-		return constants.ColorTierDefault
-	}
+	tm := models.NewTierManager()
+	return tm.GetTierColor(tier)
 }

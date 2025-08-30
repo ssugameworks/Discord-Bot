@@ -36,20 +36,22 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 	}
 
 	if sm.storage.IsBlackoutPeriod() && competition.ShowScoreboard && !isAdmin {
+		tm := models.NewTierManager()
 		embed := &discordgo.MessageEmbed{
 			Title:       "🔒 스코어보드 비공개",
 			Description: "마지막 3일간 스코어보드가 비공개됩니다",
-			Color:       constants.ColorTierDefault,
+			Color:       tm.GetTierColor(0), // Unranked color
 		}
 		return embed, nil
 	}
 
 	participants := sm.storage.GetParticipants()
 	if len(participants) == 0 {
+		tm := models.NewTierManager()
 		embed := &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("🏆 %s 스코어보드", competition.Name),
 			Description: "참가자가 없습니다.",
-			Color:       constants.ColorTierDefault,
+			Color:       tm.GetTierColor(0), // Unranked color
 		}
 		return embed, nil
 	}

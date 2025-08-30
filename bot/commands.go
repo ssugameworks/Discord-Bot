@@ -4,6 +4,7 @@ import (
 	"discord-bot/api"
 	"discord-bot/constants"
 	"discord-bot/errors"
+	"discord-bot/models"
 	"discord-bot/scoring"
 	"discord-bot/storage"
 	"discord-bot/utils"
@@ -131,10 +132,11 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	}
 
 	tierName := getTierName(userInfo.Tier)
-	colorCode := constants.GetTierANSIColor(userInfo.Tier)
+	tm := models.NewTierManager()
+	colorCode := tm.GetTierANSIColor(userInfo.Tier)
 	
 	response := fmt.Sprintf("```ansi\n%s%s(%s)%s님 성공적으로 등록되었습니다!\n```", 
-		colorCode, name, tierName, constants.ANSIReset)
+		colorCode, name, tierName, tm.GetANSIReset())
 
 	s.ChannelMessageSend(m.ChannelID, response)
 }
@@ -163,11 +165,12 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 	var sb strings.Builder
 	sb.WriteString("```ansi\n")
 
+	tm := models.NewTierManager()
 	for i, p := range participants {
 		tierName := getTierName(p.StartTier)
-		colorCode := constants.GetTierANSIColor(p.StartTier)
+		colorCode := tm.GetTierANSIColor(p.StartTier)
 		sb.WriteString(fmt.Sprintf("%s%d. %s (%s) - %s%s\n",
-			colorCode, i+1, p.Name, p.BaekjoonID, tierName, constants.ANSIReset))
+			colorCode, i+1, p.Name, p.BaekjoonID, tierName, tm.GetANSIReset()))
 	}
 
 	sb.WriteString("```")

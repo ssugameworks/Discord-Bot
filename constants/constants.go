@@ -80,52 +80,15 @@ const (
 	CommandPrefixLength = 1 // "!" 길이
 )
 
-// 티어별 색상
+// 티어별 색상 (deprecated - use models.TierManager instead)
 const (
-	ColorTierBronze   = 0xA25B1F // 브론즈 - 갈색
-	ColorTierSilver   = 0x495E78 // 실버 - 은색
-	ColorTierGold     = 0xE09E37 // 골드 - 금색
-	ColorTierPlatinum = 0x6DDFA8 // 플래티넘 - 다크터쿼이즈
-	ColorTierDiamond  = 0x50B1F6 // 다이아몬드 - 닷저블루
-	ColorTierRuby     = 0xEA3364 // 루비 - 루비색
-	ColorTierMaster   = 0x8A2BE2 // 마스터 - 블루바이올렛
-	ColorTierDefault  = 0x36393F // 기본/언랭크 - 디스코드 다크그레이
+	ColorTierGold = 0xE09E37 // 골드 - 스코어보드 기본 색상용
 )
 
-// ANSI 색상 코드 (티어별)
+// ANSI 색상 코드 (deprecated - use models.TierManager instead)
 const (
-	ANSIReset     = "\x1b[0m"
-	ANSIBronze    = "\x1b[1;33m" // 밝은 노란색 (브론즈)
-	ANSISilver    = "\x1b[1;37m" // 밝은 흰색 (실버)
-	ANSIGold      = "\x1b[1;33m" // 밝은 노란색 (골드)
-	ANSIPlatinum  = "\x1b[1;36m" // 밝은 청록색 (플래티넘)
-	ANSIDiamond   = "\x1b[1;34m" // 밝은 파란색 (다이아몬드)
-	ANSIRuby      = "\x1b[1;31m" // 밝은 빨간색 (루비)
-	ANSIMaster    = "\x1b[1;35m" // 밝은 자주색 (마스터)
-	ANSIDefault   = "\x1b[0m"    // 기본색
+	ANSIReset = "\x1b[0m"
 )
-
-// GetTierANSIColor returns ANSI color code for a given tier
-func GetTierANSIColor(tier int) string {
-	switch {
-	case tier >= 1 && tier <= 5:
-		return ANSIBronze
-	case tier >= 6 && tier <= 10:
-		return ANSISilver
-	case tier >= 11 && tier <= 15:
-		return ANSIGold
-	case tier >= 16 && tier <= 20:
-		return ANSIPlatinum
-	case tier >= 21 && tier <= 25:
-		return ANSIDiamond
-	case tier >= 26 && tier <= 30:
-		return ANSIRuby
-	case tier >= 31:
-		return ANSIMaster
-	default:
-		return ANSIDefault
-	}
-}
 
 // 환경 변수 키
 const (
