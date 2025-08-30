@@ -137,7 +137,9 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 		blackoutStatus,
 		len(ch.commandHandler.storage.GetParticipants()))
 
-	s.ChannelMessageSend(m.ChannelID, response)
+	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
+		utils.Error("대회 상태 메시지 전송 실패: %v", err)
+	}
 }
 
 func (ch *CompetitionHandler) handleCompetitionBlackout(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {

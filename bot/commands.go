@@ -100,7 +100,9 @@ func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.Messag
 // handleScoreboardCommand 스코어보드 명령어를 처리합니다 (DM 체크 포함)
 func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *discordgo.MessageCreate, isDM bool) {
 	if isDM {
-		s.ChannelMessageSend(m.ChannelID, "❌ 스코어보드는 서버에서만 확인할 수 있습니다.")
+		if _, err := s.ChannelMessageSend(m.ChannelID, "❌ 스코어보드는 서버에서만 확인할 수 있습니다."); err != nil {
+			utils.Error("DM 응답 전송 실패: %v", err)
+		}
 		return
 	}
 	ch.handleScoreboard(s, m)
@@ -108,7 +110,9 @@ func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *disco
 
 // handlePing ping 명령어를 처리합니다
 func (ch *CommandHandler) handlePing(s *discordgo.Session, m *discordgo.MessageCreate) {
-	s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+	if _, err := s.ChannelMessageSend(m.ChannelID, "Pong! 🏓"); err != nil {
+		utils.Error("Ping 응답 전송 실패: %v", err)
+	}
 }
 
 func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -130,12 +134,14 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 • ` + "`!ping`" + ` - 봇 응답 확인
 • ` + "`!도움말`" + ` - 도움말 표시`
 
-	s.ChannelMessageSend(m.ChannelID, helpText)
+	if _, err := s.ChannelMessageSend(m.ChannelID, helpText); err != nil {
+		utils.Error("도움말 메시지 전송 실패: %v", err)
+	}
 }
 
 func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	if len(params) < 2 {
 		errorHandlers.Validation().HandleInvalidParams("REGISTER_INVALID_PARAMS",
 			"Invalid register parameters",
@@ -161,16 +167,18 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	tierName := getTierName(userInfo.Tier)
 	tm := models.NewTierManager()
 	colorCode := tm.GetTierANSIColor(userInfo.Tier)
-	
-	response := fmt.Sprintf("```ansi\n%s%s(%s)%s님 성공적으로 등록되었습니다!\n```", 
+
+	response := fmt.Sprintf("```ansi\n%s%s(%s)%s님 성공적으로 등록되었습니다!\n```",
 		colorCode, name, tierName, tm.GetANSIReset())
 
-	s.ChannelMessageSend(m.ChannelID, response)
+	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
+		utils.Error("등록 응답 메시지 전송 실패: %v", err)
+	}
 }
 
 func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.MessageCreate) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	isAdmin := ch.isAdmin(s, m)
 	embed, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
@@ -178,7 +186,9 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	if _, err := s.ChannelMessageSendEmbed(m.ChannelID, embed); err != nil {
+		utils.Error("스코어보드 embed 메시지 전송 실패: %v", err)
+	}
 }
 
 func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -200,12 +210,14 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 	}
 
 	sb.WriteString("```")
-	s.ChannelMessageSend(m.ChannelID, sb.String())
+	if _, err := s.ChannelMessageSend(m.ChannelID, sb.String()); err != nil {
+		utils.Error("참가자 목록 메시지 전송 실패: %v", err)
+	}
 }
 
 func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	// 관리자 권한 확인
 	if !ch.isAdmin(s, m) {
 		errorHandlers.Validation().HandleInsufficientPermissions()
@@ -238,14 +250,22 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 	}
 
 	response := fmt.Sprintf("✅ **참가자 삭제 완료**\n🎯 백준ID: %s", baekjoonID)
-	s.ChannelMessageSend(m.ChannelID, response)
+	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
+		utils.Error("참가자 삭제 응답 메시지 전송 실패: %v", err)
+	}
 }
 
 // isAdmin는 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다
 func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	// DM에서는 관리자 권한 없음
+	if m.GuildID == "" {
+		return false
+	}
+
 	// 길드 정보 가져오기
 	guild, err := s.State.Guild(m.GuildID)
-	if err != nil {
+	if err != nil || guild == nil {
+		utils.Warn("길드 정보를 가져올 수 없습니다: %v", err)
 		return false
 	}
 
@@ -256,7 +276,8 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 
 	// 멤버 정보 가져오기
 	member, err := s.GuildMember(m.GuildID, m.Author.ID)
-	if err != nil {
+	if err != nil || member == nil {
+		utils.Warn("멤버 정보를 가져올 수 없습니다: %v", err)
 		return false
 	}
 
